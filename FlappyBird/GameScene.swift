@@ -346,8 +346,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
             contact.bodyA.node!.removeFromParent()
             self.audioPlayerClear.play()
             
-            score += 10
-            itemscore += 10
+            score += 1
+            itemscore += 1
             print("ItemGet")
             scoreLabelNode.text = "Score:\(score)"
             itemScoreLabelNode.text="ItemScore:\(itemscore)"
