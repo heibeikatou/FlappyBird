@@ -8,6 +8,8 @@
 
 import UIKit
 import SpriteKit    //追加
+import AVFoundation
+
 
 
 class ViewController: UIViewController {
@@ -29,6 +31,9 @@ class ViewController: UIViewController {
         
         // ビューにシーンを表示する
         skView.presentScene(scene)
+        
+
+        
         
     }
 

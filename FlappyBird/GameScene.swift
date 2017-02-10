@@ -1,6 +1,7 @@
 import SpriteKit
+import AVFoundation
 
-class GameScene: SKScene, SKPhysicsContactDelegate {
+class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
     
     var scrollNode:SKNode!
     var wallNode:SKNode!
@@ -17,13 +18,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     // スコア
     var score = 0
+    var itemscore = 0
     var scoreLabelNode:SKLabelNode!    // ←追加
     var bestScoreLabelNode:SKLabelNode!    // ←追加
     var itemScoreLabelNode:SKLabelNode!
     let userDefaults:UserDefaults = UserDefaults.standard
     
+    var audioPlayerClear : AVAudioPlayer! = nil
+    
     // SKView上にシーンが表示されたときに呼ばれるメソッド
     override func didMove(to view: SKView) {
+        
+        makeSound()
         
         // 重力を設定
         physicsWorld.gravity = CGVector(dx: 0.0, dy: -4.0)
@@ -73,13 +79,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             
             let item = SKNode()
-            item.position = CGPoint(x: self.frame.size.width+itemTexture.size().width/2+100,y:0.0)
+            item.position = CGPoint(x: self.frame.size.width+itemTexture.size().width/2+70,y:0.0)
             item.zPosition = -10
             
             let setItem = SKSpriteNode(texture: itemTexture)
             
             setItem.position = CGPoint(x: setItem.size.width + self.bird.size.width / 2, y: self.frame.height / 2.0)
-            setItem.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: setItem.size.width, height: self.frame.size.height))
+            setItem.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: setItem.size.width, height: setItem.size.height))
             setItem.physicsBody?.isDynamic = false
             setItem.physicsBody?.categoryBitMask = self.scoreItemCategory
             setItem.physicsBody?.contactTestBitMask = self.birdCategory
@@ -337,8 +343,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             } // --- ここまで追加---
         } else if ((contact.bodyA.categoryBitMask & scoreItemCategory) == scoreItemCategory || (contact.bodyB.categoryBitMask & scoreItemCategory) == scoreItemCategory){
 
-            //itemNode.removeFromParent()
+            contact.bodyA.node!.removeFromParent()
+            self.audioPlayerClear.play()
+            
+            score += 10
+            itemscore += 10
             print("ItemGet")
+            scoreLabelNode.text = "Score:\(score)"
+            itemScoreLabelNode.text="ItemScore:\(itemscore)"
+
+            
+            // ベストスコア更新か確認する --- ここから ---
+            var bestScore = userDefaults.integer(forKey: "BEST")
+            if score > bestScore {
+                bestScore = score
+                bestScoreLabelNode.text = "Best Score:\(bestScore)"
+                userDefaults.set(bestScore, forKey: "BEST")
+                userDefaults.synchronize()
+            } // --- ここまで追加---
             
         } else {
             // 壁か地面と衝突した
@@ -358,6 +380,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func restart() {
         score = 0
+        itemscore=0
         scoreLabelNode.text = String("Score:\(score)")
         
         bird.position = CGPoint(x: self.frame.size.width * 0.2, y:self.frame.size.height * 0.7)
@@ -382,9 +405,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabelNode.text = "Score:\(score)"
         self.addChild(scoreLabelNode)
         
+        itemscore=0
+        itemScoreLabelNode = SKLabelNode()
+        itemScoreLabelNode.fontColor = UIColor.black
+        itemScoreLabelNode.position = CGPoint(x:10,y:self.frame.size.height - 60)
+        itemScoreLabelNode.zPosition = 100
+        itemScoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left
+        itemScoreLabelNode.text = "ItemScore:\(itemscore)"
+        self.addChild(itemScoreLabelNode)
+        
         bestScoreLabelNode = SKLabelNode()
         bestScoreLabelNode.fontColor = UIColor.black
-        bestScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 60)
+        bestScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 90)
         bestScoreLabelNode.zPosition = 100 // 一番手前に表示する
         bestScoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left
         
@@ -392,5 +424,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bestScoreLabelNode.text = "Best Score:\(bestScore)"
         self.addChild(bestScoreLabelNode)
     }
-    
+
+    // MARK: サウンドファイル作成
+    func makeSound() {
+        //Clear音作る。
+        //音声ファイルのパスを作る。
+        let soundFilePathClear : NSString = Bundle.main.path(forResource: "get", ofType: "wav")! as NSString
+        let soundClear : NSURL = NSURL(fileURLWithPath: soundFilePathClear as String)
+        //AVAudioPlayerのインスタンス化
+        do{
+            audioPlayerClear = try AVAudioPlayer(contentsOf: soundClear as URL, fileTypeHint:nil)
+        }catch{
+            print("Failed AVAudioPlayer Instance")
+        }
+        //出来たインスタンスをバッファに保持する。
+        audioPlayerClear.prepareToPlay()
+    }
 }
